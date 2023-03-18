@@ -15,24 +15,18 @@ pub struct Handler {
 impl Handler {
     fn next_connect_addr(&self, start: usize) -> OutboundConnect {
         for a in self.actors[start..].iter() {
-            match a.stream() {
-                Ok(h) => {
-                    let oc = h.connect_addr();
-                    if let OutboundConnect::Next = oc {
-                        continue;
-                    }
-                    return oc;
+            if let Ok(h) = a.stream() {
+                let oc = h.connect_addr();
+                if let OutboundConnect::Next = oc {
+                    continue;
                 }
-                _ => match a.datagram() {
-                    Ok(h) => {
-                        let oc = h.connect_addr();
-                        if let OutboundConnect::Next = oc {
-                            continue;
-                        }
-                        return oc;
-                    }
-                    _ => (),
-                },
+                return oc;
+            } else if let Ok(h) = a.datagram() {
+                let oc = h.connect_addr();
+                if let OutboundConnect::Next = oc {
+                    continue;
+                }
+                return oc;
             }
         }
         OutboundConnect::Unknown
